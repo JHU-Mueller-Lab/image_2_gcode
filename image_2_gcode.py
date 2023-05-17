@@ -19,14 +19,15 @@ def image_2_gcode_2Materials(image_name, y_dist, color1, color2, other_colors, c
     prev_pixel = ''
     gcode = ''
     gcode_list = []
-    for i in range(len(img)):               # number of rows of pixels  (image height)
-        if (i + 1) % 2 == 0:                # even rows:
-            img[i] = np.flip(img[i])        # reverse order of pixel
-            dist_sign = '-'                 # reverse x-direction of print
-        else:                               # odd rows:
+
+    for i in range(len(img)):  # number of rows of pixels  (image height)
+        if (i + 1) % 2 == 0:  # even rows:
+            img[i] = np.flip(img[i])  # reverse order of pixel
+            dist_sign = '-'  # reverse x-direction of print
+        else:  # odd rows:
             dist_sign = ''
 
-        for j in range(len(img[i])):        # number of pixels in a row (image width)
+        for j in range(len(img[i])):  # number of pixels in a row (image width)
             pixel = img[i][j]
 
             if pixel != color1 and pixel != color2:
@@ -41,8 +42,7 @@ def image_2_gcode_2Materials(image_name, y_dist, color1, color2, other_colors, c
 
                 gcode = gcode_color1
 
-
-            if pixel == color2 or pixel == other_colors:
+            if pixel == color2:
                 pixel = color2
                 if prev_pixel != color2:
                     gcode_list.append(gcode + dist_sign + str(dist))
@@ -55,9 +55,8 @@ def image_2_gcode_2Materials(image_name, y_dist, color1, color2, other_colors, c
             dist += 1
             prev_pixel = pixel
 
-
         gcode_list.append(gcode + dist_sign + str(dist))
-        gcode_list.append('G1 Y'+str(y_dist))
+        gcode_list.append('G1 Y' + str(y_dist))
 
         dist = 0
         if i == len(img) - 1:
@@ -66,6 +65,7 @@ def image_2_gcode_2Materials(image_name, y_dist, color1, color2, other_colors, c
             if pixel == color2:
                 gcode_list.append(color2_OFF)
     return gcode_list
+
 
 '''This function can be used to generate 2+ Material prints'''
 def image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_list, color_OFF_list):
@@ -122,19 +122,23 @@ def image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_
             gcode_list.append(color_OFF)
     return gcode_list
 
+
 '''
 NOTES:
 
+* photo is analyzed in greyscale
 * function assumes that 1 pixel = 1 mm
 * scale the image to the correct pixel numbers prior to uploading
+* if orientation of the image matters (e.g., you want text to be correctly written on the top of the print), upload a mirror image of the print
 * you can check the shape of your image in pixels using the following:
     img = cv2.imread(image_name, 0)
     shape = img.shape
     height_in_pixels = shape[0]
     width_in_pixels = shape[1]
     print('image height = ', height_in_pixels, ' pixels')
-    print('imiage width = ', width_in_pixels, ' pixels')
-   
+    print('image width = ', width_in_pixels, ' pixels')
+    
+
 '''
 ############################################### 2 Colors function ################################
 image_name = 'test_smiley_v2.png'
@@ -147,8 +151,7 @@ width_in_pixels = shape[1]
 print('image height = ', height_in_pixels, ' pixels')
 print('image width = ', width_in_pixels, ' pixels')
 
-
-y_dist = 1   # width of filament
+y_dist = 1  # width of filament
 
 gcode_simulate = True  # If True: writes black (color1) pixels as 'G0' moves
 black = 0
@@ -165,11 +168,12 @@ color2_OFF = 'White OFF'
 
 gcode_list = image_2_gcode_2Materials(image_name, y_dist, color1, color2, other_colors, color1_ON, color1_OFF,
                                       color2_ON, color2_OFF, gcode_simulate)
+
+print(gcode_list)
 with open(gcode_export, 'w') as f:
     f.write('G91\r')
     for elem in gcode_list:
-        f.write(elem +'\n')
-
+        f.write(elem + '\n')
 
 ############################################### 2+ Colors function ################################
 image_name = 'test_smiley.png'
@@ -195,8 +199,8 @@ other_colors = gray  # what color should pixels that are not in color list be?
 color_ON_list = [color1_ON, color2_ON, color3_ON]
 color_OFF_list = [color1_OFF, color2_OFF, color3_OFF]
 
-gcode_list = image_2_gcode_2plusMaterials(image_name,color_list, other_colors, color_ON_list, color_OFF_list)
+gcode_list = image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_list, color_OFF_list)
 with open(gcode_export, 'w') as f:
     f.write('G91\r')
     for elem in gcode_list:
-        f.write(elem +'\n')
+        f.write(elem + '\n')
