@@ -68,11 +68,17 @@ def image_2_gcode_2Materials(image_name, y_dist, color1, color2, other_colors, c
 
 
 '''This function can be used to generate 2+ Material prints'''
-def image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_list, color_OFF_list):
+def image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_list, color_OFF_list, gcode_simulate, gcode_simulate_color):
+    if gcode_simulate == True:
+        gcode_color1 = "G0 X"
+    else:
+        gcode_color1 = "G1 X"
+
     img = cv2.imread(image_name, 0)
 
     dist = ''
     prev_pixel = ''
+    prev_color_OFF = ''
     color_OFF = ''
     gcode = ''
     gcode_list = []
@@ -83,33 +89,41 @@ def image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_
         else:  # odd rows:
             dist_sign = ''
 
+
+
         for j in range(len(img[i])):  # number of pixels in a row (image width)
             pixel = img[i][j]
 
             if pixel not in color_list:
                 pixel = other_colors
 
-            for k in range(len(color_list)):
-                color = color_list[k]
+            if prev_pixel != pixel:
+                for k in range(len(color_list)):
+                    color = color_list[k]
 
-                if pixel == color:
-                    color_ON = color_ON_list[k]
-                    color_OFF = color_OFF_list[k]
+                    if pixel == color:
+                        color_ON = color_ON_list[k]
+                        color_OFF = color_OFF_list[k]
 
-                    if prev_pixel != color:
-                        gcode_list.append(gcode + dist_sign + str(dist))
-                        gcode_list.append(color_ON)
 
-                        if i != 0:
-                            gcode_list.append(prev_color_OFF)
-                        dist = 0
+                gcode_list.append(gcode + dist_sign + str(dist))
+                gcode_list.append(color_ON)
 
-                    gcode = 'G1 X'
 
-                    try:
-                        dist += 1
-                    except:
-                        dist = ''
+                gcode_list.append(prev_color_OFF)
+
+                dist = 0
+
+                gcode = 'G1 X'
+                if pixel == gcode_simulate_color:
+                    gcode = gcode_color1
+
+
+
+            try:
+                dist += 1
+            except:
+                dist = ''
 
             prev_pixel = pixel
             prev_color_OFF = color_OFF
@@ -121,8 +135,6 @@ def image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_
         if i == len(img) - 1:
             gcode_list.append(color_OFF)
     return gcode_list
-
-
 '''
 NOTES:
 
@@ -176,8 +188,10 @@ with open(gcode_export, 'w') as f:
         f.write(elem + '\n')
 
 ############################################### 2+ Colors function ################################
-image_name = 'test_smiley.png'
-gcode_export = 'test_smiley_3Material.txt'
+image_name = 'test_smiley_v2.png'
+gcode_export = 'test_smiley_v2_3Material.txt'
+
+y_dist = 1  # width of filament
 
 black = 0
 white = 255
@@ -186,6 +200,10 @@ gray = 191
 color1 = black
 color2 = white
 color3 = gray
+
+gcode_simulate = True  # If True: writes black (color1) pixels as 'G0' moves
+gcode_simulate_color = gray
+
 
 color1_ON = 'Black ON'
 color1_OFF = 'Black OFF'
@@ -199,7 +217,8 @@ other_colors = gray  # what color should pixels that are not in color list be?
 color_ON_list = [color1_ON, color2_ON, color3_ON]
 color_OFF_list = [color1_OFF, color2_OFF, color3_OFF]
 
-gcode_list = image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_list, color_OFF_list)
+gcode_list = image_2_gcode_2plusMaterials(image_name, color_list, other_colors, color_ON_list, color_OFF_list,
+                                          gcode_simulate, gcode_simulate_color)
 with open(gcode_export, 'w') as f:
     f.write('G91\r')
     for elem in gcode_list:
