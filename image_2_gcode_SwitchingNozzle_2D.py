@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 '''This function can be used to generate 2 Material prints'''
-def image_2_gcode_2Materials(image_name, y_dist, offset, color1, color2, color1_ON, color1_OFF, color2_ON, color2_OFF, gcode_simulate):
+def image_2_gcode_2Materials(image_name, y_dist, offset, color1, color2,other_color_50_50_split, other_color, color1_ON, color1_OFF, color2_ON, color2_OFF, gcode_simulate):
     img = cv2.imread(image_name, 0)
 
     if gcode_simulate == True:
@@ -31,9 +31,12 @@ def image_2_gcode_2Materials(image_name, y_dist, offset, color1, color2, color1_
             pixel = img[i][j]
 
             if pixel != color1 and pixel != color2:
-                diff_pixel_color1 = abs(pixel - color1)
-                diff_pixel_color2 = abs(pixel - color2)
-                pixel = min(diff_pixel_color1, diff_pixel_color2)
+                if other_color_50_50_split == True:
+                    diff_pixel_color1 = abs(pixel - color1)
+                    diff_pixel_color2 = abs(pixel - color2)
+                    pixel = min(diff_pixel_color1, diff_pixel_color2)
+                else:
+                    pixel = other_color
 
             if pixel == color1:
                 if prev_pixel != color1:
@@ -80,7 +83,7 @@ def image_2_gcode_2Materials(image_name, y_dist, offset, color1, color2, color1_
     return gcode_list
 
 '''This function can be used to generate 2+ Material prints'''
-def image_2_gcode_2plusMaterials(image_name, y_dist, offset, color_list, color_ON_list, color_OFF_list, gcode_simulate, gcode_simulate_color):
+def image_2_gcode_2plusMaterials(image_name, y_dist, offset, color_list, other_color_50_50_split, other_color, color_ON_list, color_OFF_list, gcode_simulate, gcode_simulate_color):
     if gcode_simulate == True:
         gcode_color1 = "G0 X"
     else:
@@ -107,11 +110,14 @@ def image_2_gcode_2plusMaterials(image_name, y_dist, offset, color_list, color_O
             pixel = img[i][j]
 
             if pixel not in color_list:
-                diff_pixel = []
-                for color in range(len(color_list)):
-                    diff_pixel.append(abs(pixel - color))
+                if other_color_50_50_split == True: # True: pixel becomes color that it is closest to; False: pixel color is chosen as you specify below
+                    diff_pixel = []
+                    for color in range(len(color_list)):
+                        diff_pixel.append(abs(pixel - color))
+                    pixel = np.min(diff_pixel)
 
-                pixel = np.min(diff_pixel)
+                else:
+                    pixel = other_color
 
             if prev_pixel != pixel:
                 for k in range(len(color_list)):
@@ -153,8 +159,8 @@ def image_2_gcode_2plusMaterials(image_name, y_dist, offset, color_list, color_O
             gcode_list.append(color_OFF)
     return gcode_list
 
-'''This function can be used to generate 2+ Material prints'''
-def image_2_gcode_2plusMaterials_V2_offsets(image_name, y_dist, offset_ON, offset_OFF, color_list,color_ON_list, color_OFF_list, gcode_simulate, gcode_simulate_color):
+'''This function can be used to generate 2+ Material prints with different on/off offsets'''
+def image_2_gcode_2plusMaterials_diffOnOff_offsets(image_name, y_dist, offset_ON, offset_OFF, color_list, other_color_50_50_split, other_color, color_ON_list, color_OFF_list, gcode_simulate, gcode_simulate_color):
     if gcode_simulate == True:
         gcode_color1 = "G0 X"
     else:
@@ -183,11 +189,14 @@ def image_2_gcode_2plusMaterials_V2_offsets(image_name, y_dist, offset_ON, offse
             pixel = img[i][j]
 
             if pixel not in color_list:
-                diff_pixel = []
-                for k in range(len(color_list)):
-                    diff_pixel.append(abs(pixel - color_list[k]))
+                if other_color_50_50_split == True:  # True: pixel becomes color that it is closest to; False: pixel color is chosen as you specify below
+                    diff_pixel = []
+                    for color in range(len(color_list)):
+                        diff_pixel.append(abs(pixel - color))
+                    pixel = np.min(diff_pixel)
 
-                pixel = np.min(diff_pixel)
+                else:
+                    pixel = other_color
 
             if prev_pixel != pixel:
                 for k in range(len(color_list)):
@@ -255,22 +264,15 @@ NOTES:
     
 * CURRENT VERSION: offset variable applies to both ON and OFF
 * CURRENT VERSION: distance between edge of print and image must be greater than the offset
-* CURRENT VERSION DIFFERENT ON/OFF offsets: for some reason offset values can only be .5 different....
+* CURRENT VERSION for V2 offsets (DIFFERENT ON/OFF offsets): for some reason offset values can only be .5 different....
     
 '''
 ############################################### 2 Colors function ################################
-image_name = 'test_smiley_v2.png'
-gcode_export = 'test_smiley_v2_2Material.txt'
-
-img = cv2.imread(image_name, 0)
-shape = img.shape
-height_in_pixels = shape[0]
-width_in_pixels = shape[1]
-print('image height = ', height_in_pixels, ' pixels')
-print('image width = ', width_in_pixels, ' pixels')
+image_name = 'Heart50x50.png'
+gcode_export = 'Heart50x50_2Material.txt'
 
 y_dist = 1  # width of filament
-offset = 2
+offset = 0
 
 gcode_simulate = True  # If True: writes black (color1) pixels as 'G0' moves
 black = 0
@@ -279,26 +281,27 @@ white = 255
 color1 = black
 color2 = white
 
+# what color do you want pixels that aren't black or white?
+other_color_50_50_split = False # True: pixel becomes color that it is closest to; False: pixel color is chosen as you specify below
+other_color = black
+
+
 color1_ON = 'Black ON'
 color1_OFF = 'Black OFF'
 color2_ON = 'White ON'
 color2_OFF = 'White OFF'
 
-gcode_list = image_2_gcode_2Materials(image_name, y_dist, offset, color1, color2, color1_ON, color1_OFF, color2_ON, color2_OFF, gcode_simulate)
+gcode_list_2colors = image_2_gcode_2Materials(image_name, y_dist, offset, color1, color2,other_color_50_50_split, other_color, color1_ON, color1_OFF, color2_ON, color2_OFF, gcode_simulate)
 
 with open(gcode_export, 'w') as f:
     f.write('G91\r')
-    for elem in gcode_list:
+    for elem in gcode_list_2colors:
         f.write(elem + '\n')
 
 ############################################### 2+ Colors function ################################
 image_name = 'test_smiley_v2.png'
 gcode_export = 'test_smiley_v2_3Material.txt'
-img = cv2.imread(image_name, 0)
-for i in range(len(img)):
-    for pix in img[i]:
-        if pix != 0 and pix != 255:
-            print(pix)
+
 y_dist = 1  # width of filament
 offset = 0
 
@@ -309,6 +312,10 @@ gray = 191
 color1 = black
 color2 = white
 color3 = gray
+
+# what color do you want pixels that aren't black or white?
+other_color_50_50_split = False # True: pixel becomes color that it is closest to; False: pixel color is chosen as you specify below
+other_color = gray
 
 gcode_simulate = True  # If True: writes black (color1) pixels as 'G0' moves
 gcode_simulate_color = gray
@@ -325,10 +332,10 @@ color_list = [black, white, gray]
 color_ON_list = [color1_ON, color2_ON, color3_ON]
 color_OFF_list = [color1_OFF, color2_OFF, color3_OFF]
 
-gcode_list = image_2_gcode_2plusMaterials(image_name, y_dist, offset, color_list, color_ON_list, color_OFF_list, gcode_simulate, gcode_simulate_color)
+gcode_list_2plus_colors = image_2_gcode_2plusMaterials(image_name, y_dist, offset, color_list, other_color_50_50_split, other_color, color_ON_list, color_OFF_list, gcode_simulate, gcode_simulate_color)
 with open(gcode_export, 'w') as f:
     f.write('G91\r')
-    for elem in gcode_list:
+    for elem in gcode_list_2plus_colors:
         f.write(elem + '\n')
 
 
@@ -337,8 +344,8 @@ image_name = 'test_smiley_v2.png'
 gcode_export = 'test_smiley_v2_3Material_diff_OFFSETS.txt'
 
 y_dist = 1  # width of filament
-offset_ON = 3.5
-offset_OFF = 4
+offset_ON = 0
+offset_OFF = 0
 
 black = 0
 white = 255
@@ -347,6 +354,10 @@ gray = 191
 color1 = black
 color2 = white
 color3 = gray
+
+# what color do you want pixels that aren't black or white?
+other_color_50_50_split = False # True: pixel becomes color that it is closest to; False: pixel color is chosen as you specify below
+other_color = gray
 
 gcode_simulate = True  # If True: writes black (color1) pixels as 'G0' moves
 gcode_simulate_color = black
@@ -359,13 +370,17 @@ color2_OFF = 'White OFF'
 color3_ON = 'Gray ON'
 color3_OFF = 'Gray OFF'
 
-color_list = [black, white]
-color_ON_list = [color1_ON, color2_ON]
-color_OFF_list = [color1_OFF, color2_OFF]
+color_list = [black, white, gray]
+color_ON_list = [color1_ON, color2_ON, color3_ON]
+color_OFF_list = [color1_OFF, color2_OFF, color3_OFF]
 
-gcode_list = image_2_gcode_2plusMaterials_V2_offsets(image_name, y_dist, offset_ON, offset_OFF, color_list, color_ON_list, color_OFF_list, gcode_simulate, gcode_simulate_color)
+gcode_list_2plus_diff_offsets = image_2_gcode_2plusMaterials_diffOnOff_offsets(image_name, y_dist, offset_ON,
+                                                                               offset_OFF, color_list,
+                                                                               other_color_50_50_split, other_color,
+                                                                               color_ON_list, color_OFF_list,
+                                                                               gcode_simulate, gcode_simulate_color)
 with open(gcode_export, 'w') as f:
     f.write('G91\r')
-    for elem in gcode_list:
+    for elem in gcode_list_2plus_diff_offsets:
         f.write(elem + '\n')
 
