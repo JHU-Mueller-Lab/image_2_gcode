@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 '''This function does not include offsets'''
-def image_2_gcode_2Materials(image_name1, image_name2, y_dist, color1, color2, side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side):
+def image_2_gcode_2Materials(image_name1, image_name2, y_dist, color1, color2, other_color_50_50_split, other_color_side1, other_color_side2,side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side):
     img1 = cv2.imread(image_name1, 0)
     #img2 = cv2.bitwise_not(img1)
     img2 = cv2.imread(image_name2, 0)
@@ -45,14 +45,20 @@ def image_2_gcode_2Materials(image_name1, image_name2, y_dist, color1, color2, s
             pixel2 = img2[i][j]
 
             if pixel1 != color1 and pixel1 != color2:
-                diff_pixel_color1 = abs(pixel1 - color1)
-                diff_pixel_color2 = abs(pixel1 - color2)
-                pixel1 = min(diff_pixel_color1, diff_pixel_color2)
+                if other_color_50_50_split == True:
+                    diff_pixel_color1 = abs(pixel1 - color1)
+                    diff_pixel_color2 = abs(pixel1 - color2)
+                    pixel1 = min(diff_pixel_color1, diff_pixel_color2)
+                else:
+                    pixel1 = other_color_side1
 
             if pixel2 != color1 and pixel2 != color2:
-                diff_pixel_color1 = abs(pixel2 - color1)
-                diff_pixel_color2 = abs(pixel2 - color2)
-                pixel2 = min(diff_pixel_color1, diff_pixel_color2)
+                if other_color_50_50_split == True:
+                    diff_pixel_color1 = abs(pixel2 - color1)
+                    diff_pixel_color2 = abs(pixel2 - color2)
+                    pixel2 = min(diff_pixel_color1, diff_pixel_color2)
+                else:
+                    pixel2 = other_color_side2
 
             '''IMAGE 1'''
             if pixel1 != prev_pixel1:
@@ -127,7 +133,7 @@ def image_2_gcode_2Materials(image_name1, image_name2, y_dist, color1, color2, s
     return gcode_dict, command_dict
 
 '''This function includes only one offset value (i.e., you can't have a different offset for ON and OFF) and distance between commands and edges of print is greater than offset'''
-def image_2_gcode_2Materials_offset_v1(image_name1, image_name2, y_dist, offset, color1, color2, side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side):
+def image_2_gcode_2Materials_offset(image_name1, image_name2, y_dist, offset, color1, color2, other_color_50_50_split, other_color_side1, other_color_side2, side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side):
     img1 = cv2.imread(image_name1, 0)
     #img2 = cv2.bitwise_not(img1)
     img2 = cv2.imread(image_name2, 0)
@@ -165,14 +171,20 @@ def image_2_gcode_2Materials_offset_v1(image_name1, image_name2, y_dist, offset,
             pixel2 = img2[i][j]
 
             if pixel1 != color1 and pixel1 != color2:
-                diff_pixel_color1 = abs(pixel1 - color1)
-                diff_pixel_color2 = abs(pixel1 - color2)
-                pixel1 = min(diff_pixel_color1, diff_pixel_color2)
+                if other_color_50_50_split == True:
+                    diff_pixel_color1 = abs(pixel1 - color1)
+                    diff_pixel_color2 = abs(pixel1 - color2)
+                    pixel1 = min(diff_pixel_color1, diff_pixel_color2)
+                else:
+                    pixel1 = other_color_side1
 
             if pixel2 != color1 and pixel2 != color2:
-                diff_pixel_color1 = abs(pixel2 - color1)
-                diff_pixel_color2 = abs(pixel2 - color2)
-                pixel2 = min(diff_pixel_color1, diff_pixel_color2)
+                if other_color_50_50_split == True:
+                    diff_pixel_color1 = abs(pixel2 - color1)
+                    diff_pixel_color2 = abs(pixel2 - color2)
+                    pixel2 = min(diff_pixel_color1, diff_pixel_color2)
+                else:
+                    pixel2 = other_color_side2
 
             '''IMAGE 1'''
             if pixel1 != prev_pixel1:
@@ -249,7 +261,7 @@ def image_2_gcode_2Materials_offset_v1(image_name1, image_name2, y_dist, offset,
     return gcode_dict, command_dict
 
 '''This function includes both on and off offset value (i.e., you can have a different offset for ON and OFF). Currently only works correctly if the distance between commands and edges of the print is greater than the offset length'''
-def image_2_gcode_2Materials_offset_v2(image_name1, image_name2, y_dist, offset_ON, offset_OFF, color1, color2, side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side):
+def image_2_gcode_2Materials_offset_Diff_OnOFF(image_name1, image_name2, y_dist, offset_ON, offset_OFF, color1, color2,other_color_50_50_split, other_color_side1, other_color_side2, side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side):
     img1 = cv2.imread(image_name1, 0)
     #img2 = cv2.bitwise_not(img1)
     img2 = cv2.imread(image_name2, 0)
@@ -289,14 +301,20 @@ def image_2_gcode_2Materials_offset_v2(image_name1, image_name2, y_dist, offset_
             pixel2 = img2[i][j]
 
             if pixel1 != color1 and pixel1 != color2:
-                diff_pixel_color1 = abs(pixel1 - color1)
-                diff_pixel_color2 = abs(pixel1 - color2)
-                pixel1 = min(diff_pixel_color1, diff_pixel_color2)
+                if other_color_50_50_split == True:
+                    diff_pixel_color1 = abs(pixel1 - color1)
+                    diff_pixel_color2 = abs(pixel1 - color2)
+                    pixel1 = min(diff_pixel_color1, diff_pixel_color2)
+                else:
+                    pixel1 = other_color_side1
 
             if pixel2 != color1 and pixel2 != color2:
-                diff_pixel_color1 = abs(pixel2 - color1)
-                diff_pixel_color2 = abs(pixel2 - color2)
-                pixel2 = min(diff_pixel_color1, diff_pixel_color2)
+                if other_color_50_50_split == True:
+                    diff_pixel_color1 = abs(pixel2 - color1)
+                    diff_pixel_color2 = abs(pixel2 - color2)
+                    pixel2 = min(diff_pixel_color1, diff_pixel_color2)
+                else:
+                    pixel2 = other_color_side2
 
             '''IMAGE 1'''
             if pixel1 != prev_pixel1:
@@ -435,53 +453,13 @@ NOTES:
 
 
 '''
-############################################### 2 Colors function ################################
-image_name1 = 'test_smiley_v2.png'
-#image_name2 = 'test_smiley_v2.png'
-image_name2 = 'Heart50x50.png'
-gcode_export = 'test_Daniel.txt'
-
-y_dist = 1  # width of filament
-
-gcode_simulate = True   # If True: writes black (color1) pixels as 'G0' moves
-simulate_side = 2     # Visualize side 1 or 2?
-
-black = 0
-white = 255
-
-color1 = black        # layer color
-color2 = white        # core color
-
-
-side1_color1_ON = 'Side 1: Black ON'
-side1_color1_OFF = 'Side 1: Black OFF'
-
-side2_color1_ON = 'Side 2: Black ON'
-side2_color1_OFF = 'Side 2: Black OFF'
-
-core_color_ON = 'White ON'
-core_color_OFF = 'White OFF'
-
-output = image_2_gcode_2Materials(image_name1, image_name2, y_dist, color1, color2,  side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side)
-gcode_dict = output[0]
-command_dict = output[1]
-
-with open(gcode_export, 'w') as f:
-    f.write('G91\r')
-    f.write(core_color_ON)
-    for i in range(len(gcode_dict)):
-        f.write(gcode_dict[i + 1] + '\n')
-        for command in command_dict[i + 1]:
-            f.write(command + '\n')
-    f.write(core_color_OFF)
-
-################### offset v1 #####################
+################### offset (same ON/OFF) #####################
 image_name1 = 'test_smiley_v2.png'
 image_name2 = 'Heart50x50.png'
 gcode_export = 'test_Daniel_offset_v1.txt'
 
 y_dist = 1  # width of filament
-offset = 3
+offset = 0
 
 gcode_simulate = True   # If True: writes black (color1) pixels as 'G0' moves
 simulate_side = 2    # Visualize side 1 or 2?
@@ -492,6 +470,11 @@ white = 255
 color1 = black        # layer color
 color2 = white        # core color
 
+# what color do you want pixels that aren't black or white?
+other_color_50_50_split = False # True: pixel becomes color that it is closest to; False: pixel color is chosen as you specify below
+other_color_side1 = black
+other_color_side2 = black
+
 
 side1_color1_ON = 'Side 1: Black ON'
 side1_color1_OFF = 'Side 1: Black OFF'
@@ -502,7 +485,10 @@ side2_color1_OFF = 'Side 2: Black OFF'
 core_color_ON = 'White ON'
 core_color_OFF = 'White OFF'
 
-output = image_2_gcode_2Materials_offset_v1(image_name1, image_name2, y_dist, offset, color1, color2, side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side)
+output = image_2_gcode_2Materials_offset(image_name1, image_name2, y_dist, offset, color1, color2,
+                                         other_color_50_50_split, other_color_side1, other_color_side2, side1_color1_ON,
+                                         side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate,
+                                         simulate_side)
 gcode_dict = output[0]
 command_dict = output[1]
 
@@ -518,10 +504,9 @@ with open(gcode_export, 'w') as f:
             f.write(command + '\n')
     f.write(core_color_OFF)
 
-################### offset v2#####################
+################### offset (different on/off) #####################
 
 image_name1 = 'test_smiley_v2.png'
-#image_name2 = 'test_smiley_v2.png'
 image_name2 = 'Heart50x50.png'
 gcode_export = 'test_Daniel_offset_v2.txt'
 
@@ -547,7 +532,10 @@ side2_color1_OFF = 'Side 2: Black OFF'
 core_color_ON = 'White ON'
 core_color_OFF = 'White OFF'
 
-output = image_2_gcode_2Materials_offset_v2(image_name1, image_name2, y_dist, offset_ON, offset_OFF, color1, color2, side1_color1_ON, side1_color1_OFF, side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side)
+output = image_2_gcode_2Materials_offset_Diff_OnOFF(image_name1, image_name2, y_dist, offset_ON, offset_OFF, color1,
+                                                    color2, other_color_50_50_split, other_color_side1,
+                                                    other_color_side2, side1_color1_ON, side1_color1_OFF,
+                                                    side2_color1_ON, side2_color1_OFF, gcode_simulate, simulate_side)
 gcode_dict = output[0]
 command_dict = output[1]
 
