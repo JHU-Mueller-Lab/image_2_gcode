@@ -4,9 +4,11 @@ import numpy as np
 '''NOTES
 * all images must be the same size
 * 1 pixel = 1 mm
-* filament spacing and z height  = 1 mm (in current version)
+* smallest feature must be > offset
+* distance to edge must > offset 
 '''
-def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, offset_ON, offset_OFF):
+
+def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, inner_cube_width, offset_ON, offset_OFF):
     black = 0
     white = 255
     img_list = []
@@ -33,28 +35,39 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
     West_OFF = toggle_OFF_list[3]
 
     ### This section creates the spiral print path
-    current_length = fil_width
+    current_length = inner_cube_width
+    if inner_cube_width == 0:
+        current_length = fil_width
+
     p_list_A = []  # relative coordinate
     dir_list_A = []  # direction of nozzle
     face_list_A = []  # face on the cube
 
-    for wall in range(wall_thickness):
+    #for wall in range(wall_thickness):
+    while current_length <= width:
         # N -> W -> S -> E (A layers go outward)
         p1 = [0, current_length]       # NORTH
         p2 = [-current_length, 0]      # WEST
-        current_length += fil_width
-        p3 = [0, -current_length]      # SOUTH
-        p4 = [current_length, 0]       # EAST
-
-        current_length += fil_width
 
         p_list_A.append(p1)
-        dir_list_A.append('North')      # direction of nozzle
-        face_list_A.append('East')      # face on the cube
+        dir_list_A.append('North')  # direction of nozzle
+        face_list_A.append('East')  # face on the cube
 
         p_list_A.append(p2)
         dir_list_A.append('West')
         face_list_A.append('North')
+
+        if current_length >= width:
+            p_final = [0, -current_length]
+            p_list_A.append(p_final)
+            dir_list_A.append('South')
+            face_list_A.append('West')
+
+            break
+
+        current_length += fil_width
+        p3 = [0, -current_length]      # SOUTH
+        p4 = [current_length, 0]       # EAST
 
         p_list_A.append(p3)
         dir_list_A.append('South')
@@ -64,12 +77,18 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         dir_list_A.append('East')
         face_list_A.append('South')
 
-        if (wall+1) == wall_thickness:
-            current_length -= 1
+        if current_length >= width:
+            #current_length -= 1
             p_final = [0, current_length]
             p_list_A.append(p_final)
             dir_list_A.append('North')
             face_list_A.append('East')
+
+            break
+
+        else:
+            current_length += fil_width
+
 
     # B layers go inward
     p_list_A_reversed = list(reversed(p_list_A))
@@ -96,6 +115,8 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
     face_list_B = list(reversed(face_list_A))
 
+    outer_face_short = face_list_A[-4]  # edge of this face will have 1 mm used for +z
+
     ## This section makes sure the final layer does not have dollop in the center
     if height%2 == 0: # if the height is an even number
         p_list_odd = p_list_A
@@ -108,6 +129,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
         outer_edge_list_odd = p_list_odd[-4:]
         outer_edge_list_even = p_list_even[0:4]
+
         reverse_pixels = 'even' # reverses pixels when layer is even
 
     else:
@@ -121,8 +143,8 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
         outer_edge_list_odd = p_list_odd[0:4]
         outer_edge_list_even = p_list_even[-4:]
-        reverse_pixels = 'odd'  # reverses pixels when layer is odd
 
+        reverse_pixels = 'odd'  # reverses pixels when layer is odd
 
     # print(outer_edge_list_odd)
     # print(outer_edge_list_even)
@@ -132,6 +154,10 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
     z = z_height
     prev_pixel = ''
     prev_valve_OFF = ''
+
+    if visualize_ON == True:
+        z_var = "Z"
+
     print('G91')
     for layer in range(num_layers):
         print(';---LAYER-----', layer+1)
@@ -191,13 +217,16 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
                 if current_face == 'North':  # Image 2, nozzle moving East or West
                     current_img = img_list[1][layer]
-                    current_img = current_img[1:]
+                    #current_img = current_img[1:]
 
                 if current_face == 'West':  # Image 3, nozzle moving North or South
                     current_img = img_list[2][layer]
 
                 if current_face == 'South':  # Image 4, nozzle moving East or West
                     current_img = img_list[3][layer]
+
+                if current_face == outer_face_short:   # edge of img (first pixel) is replaced by +Z movement
+                    current_img = current_img[1:]
 
                 if layer_flag == reverse_pixels:
                     current_img = np.flip(current_img)
@@ -235,18 +264,25 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    image1 = 'temp_aaron.png'#'temp_S_55.png' #'temp_aaron.png'#'temp_heart.png'
-    image2 = 'temp_smiley.png'#'temp_heart_55.png' #'temp_smiley.png'
-    image3 = 'temp_heart.png'#'temp_star_55.png' #'temp_heart.png'
-    image4 = 'temp_sarah_waz.png'#'temp_smiley_55.png'#'temp_sarah_waz.png'
+    image1 = 'temp_S_55.png' #'temp_aaron.png'#'temp_heart.png'
+    image2 = 'temp_heart_55.png' #'temp_smiley.png'
+    image3 = 'temp_star_55.png' #'temp_heart.png'
+    image4 = 'temp_smiley_55.png'#'temp_sarah_waz.png'
 
+    ## To view in g-code simulator (https://nraynaud.github.io/webgcode/):
     visualize_ON = True
+
+    ## Geometry
+    inner_cube_width = 0    # removes center of cube if > 0
+    fil_width = 1           # filament spacing
+    z_height = 1            # layer height
+    z_var = "D"             # for use in aerotech
+
+    ## Offset compensation
     offset_ON = 0
     offset_OFF = 0
-    fil_width = 1
-    z_height = 1
-    z_var = "Z"
 
+    ## Valve Toggle
     North_ON = 'North ON'
     South_ON = 'South ON'
     West_ON = 'West ON'
@@ -257,23 +293,9 @@ if __name__ == '__main__':
     West_OFF = 'West OFF'
     East_OFF = 'East OFF'
 
-
+    ##################################################################################################
     toggle_ON_list = [North_ON, South_ON, East_ON, West_ON]
     toggle_OFF_list = [North_OFF, South_OFF, East_OFF, West_OFF]
-
-
     image_list = [image1, image2, image3, image4]
-    image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, offset_ON, offset_OFF)
 
-
-    # import turtle
-    #
-    # t = turtle.Turtle()
-    # side = 0
-    # for i in range(100):
-    #    t.forward(side)
-    #    t.right(90) #Exterior angle of a square is 90 degree
-    #    side = side + 2
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
-
+    image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, inner_cube_width, offset_ON, offset_OFF)
