@@ -22,17 +22,6 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
     width = img_shape[1]
 
     num_layers = int(height)
-    wall_thickness = int(width/2)
-
-    North_ON = toggle_ON_list[0]
-    South_ON = toggle_ON_list[1]
-    East_ON = toggle_ON_list[2]
-    West_ON = toggle_ON_list[3]
-
-    North_OFF = toggle_OFF_list[0]
-    South_OFF = toggle_OFF_list[1]
-    East_OFF = toggle_OFF_list[2]
-    West_OFF = toggle_OFF_list[3]
 
     ### This section creates the spiral print path
     current_length = inner_cube_width
@@ -151,6 +140,24 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
     # print(reverse_pixels)
 
     #### This section creates the final print path that will be used
+    dirNorth_faceEast_ON = toggle_ON_list[0]
+    dirNorth_faceWest_ON = toggle_ON_list[1]
+    dirSouth_faceEast_ON = toggle_ON_list[2]
+    dirSouth_faceWest_ON = toggle_ON_list[3]
+    dirWest_faceNorth_ON = toggle_ON_list[4]
+    dirWest_faceSouth_ON = toggle_ON_list[5]
+    dirEast_faceNorth_ON = toggle_ON_list[6]
+    dirEast_faceSouth_ON = toggle_ON_list[7]
+
+    dirNorth_faceEast_OFF = toggle_OFF_list[0]
+    dirNorth_faceWest_OFF = toggle_OFF_list[1]
+    dirSouth_faceEast_OFF = toggle_OFF_list[2]
+    dirSouth_faceWest_OFF = toggle_OFF_list[3]
+    dirWest_faceNorth_OFF = toggle_OFF_list[4]
+    dirWest_faceSouth_OFF = toggle_OFF_list[5]
+    dirEast_faceNorth_OFF = toggle_OFF_list[6]
+    dirEast_faceSouth_OFF = toggle_OFF_list[7]
+
     z = z_height
     prev_pixel = ''
     prev_valve_OFF = ''
@@ -189,26 +196,45 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                 print(';---current dir----', current_dir)
 
                 if current_dir == 'North':
-                    valve_on = North_ON
-                    valve_OFF = North_OFF
+                    if current_face == 'East':
+                        valve_on = dirNorth_faceEast_ON
+                        valve_OFF = dirNorth_faceEast_OFF
+                    elif current_face == 'West':
+                        valve_on = dirNorth_faceWest_ON
+                        valve_OFF = dirNorth_faceWest_OFF
+
                     variable = 'Y'
                     sign = ''
 
                 if current_dir == 'South':
-                    valve_on = South_ON
-                    valve_OFF = South_OFF
+                    if current_face == 'East':
+                        valve_on = dirSouth_faceEast_ON
+                        valve_OFF = dirSouth_faceEast_OFF
+                    elif current_face == 'West':
+                        valve_on = dirSouth_faceWest_ON
+                        valve_OFF = dirSouth_faceWest_OFF
+
                     variable = 'Y'
                     sign = '-'
 
                 if current_dir == 'East':
-                    valve_on = East_ON
-                    valve_OFF = East_OFF
+                    if current_face == 'North':
+                        valve_on = dirEast_faceNorth_ON
+                        valve_OFF = dirEast_faceNorth_OFF
+                    elif current_face == 'South':
+                        valve_on = dirEast_faceSouth_ON
+                        valve_OFF = dirEast_faceSouth_OFF
                     variable = 'X'
                     sign = ''
 
                 if current_dir == 'West':
-                    valve_on = West_ON
-                    valve_OFF = West_OFF
+                    if current_face == 'North':
+                        valve_on = dirWest_faceNorth_ON
+                        valve_OFF = dirWest_faceNorth_OFF
+                    elif current_face == 'South':
+                        valve_on = dirWest_faceSouth_ON
+                        valve_OFF = dirWest_faceSouth_OFF
+
                     variable = 'X'
                     sign = '-'
 
@@ -267,13 +293,13 @@ if __name__ == '__main__':
     image1 = 'temp_S_55.png' #'temp_aaron.png'#'temp_heart.png'
     image2 = 'temp_heart_55.png' #'temp_smiley.png'
     image3 = 'temp_star_55.png' #'temp_heart.png'
-    image4 = 'temp_smiley_55.png'#'temp_sarah_waz.png'
+    image4 = 'temp_smiley_55_v2.png'#'temp_sarah_waz.png'
 
     ## To view in g-code simulator (https://nraynaud.github.io/webgcode/):
     visualize_ON = True
 
     ## Geometry
-    inner_cube_width = 0    # removes center of cube if > 0
+    inner_cube_width = 30    # removes center of cube if > 0
     fil_width = 1           # filament spacing
     z_height = 1            # layer height
     z_var = "D"             # for use in aerotech
@@ -283,19 +309,47 @@ if __name__ == '__main__':
     offset_OFF = 0
 
     ## Valve Toggle
-    North_ON = 'North ON'
-    South_ON = 'South ON'
-    West_ON = 'West ON'
-    East_ON = 'East ON'
+    dirNorth_faceEast_ON = 'NE ON'
+    dirNorth_faceWest_ON = 'NW ON'
+    dirSouth_faceEast_ON = 'SE ON'
+    dirSouth_faceWest_ON = 'SW ON'
+    dirWest_faceNorth_ON = 'WN ON'
+    dirWest_faceSouth_ON = 'WS ON'
+    dirEast_faceNorth_ON = 'EN ON'
+    dirEast_faceSouth_ON = 'ES ON'
 
-    North_OFF = 'North OFF'
-    South_OFF = 'South OFF'
-    West_OFF = 'West OFF'
-    East_OFF = 'East OFF'
+    dirNorth_faceEast_OFF = 'NE OFF'
+    dirNorth_faceWest_OFF = 'NW OFF'
+    dirSouth_faceEast_OFF = 'SE OFF'
+    dirSouth_faceWest_OFF = 'SW OFF'
+    dirWest_faceNorth_OFF = 'WN OFF'
+    dirWest_faceSouth_OFF = 'WS OFF'
+    dirEast_faceNorth_OFF = 'EN OFF'
+    dirEast_faceSouth_OFF = 'ES OFF'
 
     ##################################################################################################
-    toggle_ON_list = [North_ON, South_ON, East_ON, West_ON]
-    toggle_OFF_list = [North_OFF, South_OFF, East_OFF, West_OFF]
+    toggle_ON_list = [
+        dirNorth_faceEast_ON,
+        dirNorth_faceWest_ON,
+        dirSouth_faceEast_ON,
+        dirSouth_faceWest_ON,
+        dirWest_faceNorth_ON,
+        dirWest_faceSouth_ON,
+        dirEast_faceNorth_ON,
+        dirEast_faceSouth_ON
+    ]
+
+    toggle_OFF_list = [
+        dirNorth_faceEast_OFF,
+        dirNorth_faceWest_OFF,
+        dirSouth_faceEast_OFF,
+        dirSouth_faceWest_OFF,
+        dirWest_faceNorth_OFF,
+        dirWest_faceSouth_OFF,
+        dirEast_faceNorth_OFF,
+        dirEast_faceSouth_OFF
+    ]
+
     image_list = [image1, image2, image3, image4]
 
     image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, inner_cube_width, offset_ON, offset_OFF)
