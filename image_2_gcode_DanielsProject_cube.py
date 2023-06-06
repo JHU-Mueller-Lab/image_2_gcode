@@ -309,22 +309,30 @@ if __name__ == '__main__':
     offset_OFF = 0
 
     ## Valve Toggle
+    #### Toggle ON (grouped by face of cube)
     dirNorth_faceEast_ON = 'NE ON'
-    dirNorth_faceWest_ON = 'NW ON'
     dirSouth_faceEast_ON = 'SE ON'
-    dirSouth_faceWest_ON = 'SW ON'
-    dirWest_faceNorth_ON = 'WN ON'
-    dirWest_faceSouth_ON = 'WS ON'
-    dirEast_faceNorth_ON = 'EN ON'
-    dirEast_faceSouth_ON = 'ES ON'
 
+    dirNorth_faceWest_ON = 'NW ON'
+    dirSouth_faceWest_ON = 'SW ON'
+   
+    dirWest_faceNorth_ON = 'WN ON'
+    dirEast_faceNorth_ON = 'EN ON'
+
+    dirWest_faceSouth_ON = 'WS ON'
+    dirEast_faceSouth_ON = 'ES ON'
+     
+    #### Toggle OFF (grouped by face of cube)
     dirNorth_faceEast_OFF = 'NE OFF'
-    dirNorth_faceWest_OFF = 'NW OFF'
     dirSouth_faceEast_OFF = 'SE OFF'
+
+    dirNorth_faceWest_OFF = 'NW OFF'
     dirSouth_faceWest_OFF = 'SW OFF'
+    
     dirWest_faceNorth_OFF = 'WN OFF'
-    dirWest_faceSouth_OFF = 'WS OFF'
     dirEast_faceNorth_OFF = 'EN OFF'
+
+    dirWest_faceSouth_OFF = 'WS OFF'
     dirEast_faceSouth_OFF = 'ES OFF'
 
     ##################################################################################################
