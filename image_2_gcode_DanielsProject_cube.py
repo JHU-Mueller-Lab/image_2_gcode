@@ -160,6 +160,10 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         z_var = "Z"
 
     print('G91')
+    dist_list = []
+    var_list = []
+    command_list = []
+    G_list = []
     for layer in range(num_layers):
         print(';---LAYER-----', layer + 1)
         if (layer + 1) % 2 != 0:
@@ -178,9 +182,26 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
         # print('---outer edge---', outer_edge_list)
 
+
         for coordinates in range(len(p_list)):
             if p_list[coordinates] not in outer_edge_list:
                 print('G1 X' + str(p_list[coordinates][0]) + ' Y' + str(p_list[coordinates][1]))
+
+                ##### create distance and variable list
+                for i in range(len(p_list[coordinates])):
+                    dist = p_list[coordinates][i]
+
+                    if dist != 0:
+                        if i == 0:
+                            var = 'X'
+                        else:
+                            var = 'Y'
+
+                        dist_list.append(dist)
+                        var_list.append(var)
+                        command_list.append('')
+                        G_list.append('G1')
+
 
             elif p_list[coordinates] in outer_edge_list:
 
@@ -198,7 +219,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                         valve_OFF = dirNorth_faceWest_OFF
 
                     variable = 'Y'
-                    sign = ''
+                    sign = 1
 
                 if current_dir == 'South':
                     if current_face == 'East':
@@ -209,7 +230,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                         valve_OFF = dirSouth_faceWest_OFF
 
                     variable = 'Y'
-                    sign = '-'
+                    sign = -1
 
                 if current_dir == 'East':
                     if current_face == 'North':
@@ -219,7 +240,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                         valve_on = dirEast_faceSouth_ON
                         valve_OFF = dirEast_faceSouth_OFF
                     variable = 'X'
-                    sign = ''
+                    sign = 1
 
                 if current_dir == 'West':
                     if current_face == 'North':
@@ -230,7 +251,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                         valve_OFF = dirWest_faceSouth_OFF
 
                     variable = 'X'
-                    sign = '-'
+                    sign = -1
 
                 if current_face == 'East':  # Image 1, nozzle moving North or South
                     current_img = img_list[0][layer]
@@ -252,7 +273,9 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                     current_img = np.flip(current_img)
 
                 current_distance = 0
+                current_distance_no_offset = 0
                 offset = 0
+
                 for pixel in current_img:
                     if pixel != white:
                         pixel = black
@@ -260,25 +283,56 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                     if prev_pixel != pixel:
                         if pixel == black:
                             offset = offset_ON
-                            print('G1 ' + str(variable) + str(sign) + str(current_distance - offset))
+                            print('G1 ' + str(variable) + str(sign*(current_distance - offset)))
                             print(valve_on)
+
+                            dist_list.append(sign*current_distance_no_offset)
+                            var_list.append(variable)
+                            command_list.append(valve_on)
+                            G_list.append('G1')
+
+
+
                         elif pixel != black and layer > 0:
                             offset = offset_OFF
                             if visualize_ON == True:
-                                print('G0 ' + str(variable) + str(sign) + str(current_distance - offset))
-                            else:
-                                print('G1 ' + str(variable) + str(sign) + str(current_distance - offset))
+                                print('G0 ' + str(variable) + str(sign*(current_distance - offset)))
+                                G_list.append('G0')
 
+                            else:
+                                print('G1 ' + str(variable) + str(sign*(current_distance - offset)))
+                                G_list.append('G1')
                             print(prev_valve_OFF)
+
+                            dist_list.append(sign*current_distance_no_offset)
+                            var_list.append(variable)
+                            command_list.append(valve_OFF)
+
+
                         current_distance = offset
+                        current_distance_no_offset = 0
 
                     current_distance += 1
+                    current_distance_no_offset +=1
                     prev_pixel = pixel
                     prev_valve_OFF = valve_OFF
 
-                print('G1 ' + str(variable) + str(sign) + str(current_distance))
+                print('G1 ' + str(variable) + str(sign*(current_distance)))
+
+                dist_list.append(sign*current_distance_no_offset)
+                var_list.append(variable)
+                command_list.append('')
+                G_list.append('G1')
 
         print('G1 ' + str(z_var) + str(z))
+        dist_list.append(z)
+        var_list.append(z_var)
+        command_list.append('')
+        G_list.append('G1')
+
+    return G_list, var_list, dist_list, command_list
+
+
 
 def spiral_matrix(image):
     img = cv2.imread(image, 0)
@@ -351,8 +405,8 @@ if __name__ == '__main__':
     z_var = "D"  # for use in aerotech
 
     ## Offset compensation
-    offset_ON = 0
-    offset_OFF = 0
+    offset_ON = 10
+    offset_OFF = 10
 
     ## Valve Toggle
     #### Toggle ON (grouped by face of cube)
@@ -406,8 +460,25 @@ if __name__ == '__main__':
 
     image_list = [image1, image2, image3, image4]
 
-    image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var,
-                            wall_thickness, offset_ON, offset_OFF)
+    output = image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, wall_thickness, offset_ON, offset_OFF)
+
+    # print(output[2])
+    print('--------------------')
+    for i in range(len(output[0])):
+        
+        if output[3][i] != '':
+            offset_dist = output[2][i] - offset_dist
+            if offset_dist < 0:
+                
+                
+        else:
+            offset_dist = output[2][i] + offset_dist
+        
+        
+        
+        print(str(output[0][i]) + ' ' + str(output[1][i]) + str(output[2][i]))
+        print(output[3][i])
+
 
     #spiral_matrix(image_bottom)
 
