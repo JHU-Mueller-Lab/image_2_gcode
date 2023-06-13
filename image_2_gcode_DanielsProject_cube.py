@@ -99,6 +99,8 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
     face_list_B = list(reversed(face_list_A))
 
     outer_face_short = face_list_A[-4]  # edge of this face will have 1 mm used for +z
+    print(p_list_A)
+    print(p_list_B)
 
     ## This section makes sure the final layer does not have dollop in the center
     if height % 2 != 0:  # if the height is an odd number
@@ -180,7 +182,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
             dir_list = dir_list_even
             outer_edge_list = outer_edge_list_even
 
-        # print('---outer edge---', outer_edge_list)
+        print('---outer edge---', outer_edge_list)
 
 
         for coordinates in range(len(p_list)):
@@ -293,7 +295,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
 
 
-                        elif pixel != black and layer > 0:
+                        elif pixel != black and prev_pixel != '':
                             offset = offset_OFF
                             if visualize_ON == True:
                                 print('G0 ' + str(variable) + str(sign*(current_distance - offset)))
@@ -385,12 +387,104 @@ def spiral_matrix(image):
                 dir = 0
 
 
+## in and out spiral; not complete....
+def image2gcode_spiral_cube2(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var,wall_thickness, offset_ON, offset_OFF):
+    black = 0
+    white = 255
+    img_list = []
+    for image in image_list:
+        img = cv2.imread(image, 0)
+        img = cv2.flip(img, 0)  # flip over y-axis
+        img_list.append(img)  # converts images to pixels
+
+    img_shape = img_list[0].shape  # finds width and height of image (will use the first image in the last)
+    height = img_shape[0]
+    width = img_shape[1]
+
+    num_layers = int(height)
+
+    ### This section creates the spiral print path
+    if wall_thickness == 'solid':
+        current_length = fil_width
+    else:
+        current_length = width - (2 * wall_thickness - 1)
+
+    p_list_A = []  # relative coordinate
+    dir_list_A = []  # direction of nozzle
+    face_list_A = []  # face on the cube
+
+    # for wall in range(wall_thickness):
+    while current_length < width:
+
+        if current_length == fil_width:
+            p_start = [current_length, 0]
+            p_list_A.append(p_start)
+            dir_list_A.append('East')  # direction of nozzle
+            face_list_A.append('South')  # face on the cube
+
+        # N -> W -> S -> E (A layers go outward)
+        p1 = [0, current_length]  # NORTH
+
+        current_length += fil_width
+
+        p2 = [-current_length, 0]  # WEST
+        p3 = [0, -current_length]  # SOUTH
+
+        if current_length < width:
+            current_length += fil_width
+
+        p4 = [current_length, 0]  # EAST
+
+        p_list_A.append(p1)
+        dir_list_A.append('North')  # direction of nozzle
+        face_list_A.append('East')  # face on the cube
+
+        p_list_A.append(p2)
+        dir_list_A.append('West')
+        face_list_A.append('North')
+
+        p_list_A.append(p3)
+        dir_list_A.append('South')
+        face_list_A.append('West')
+
+        p_list_A.append(p4)
+        dir_list_A.append('East')
+        face_list_A.append('South')
+
+    # B layers go inwards
+    p_list_B = list(reversed(p_list_A))
+    for i in range(len(p_list_B)):
+        p_list_B[i] = list(reversed(p_list_B[i]))
+
+    dir_list_B = dir_list_A
+    face_list_B = face_list_A
+
+    with open('----testingNewSpiral.txt----','w') as f:
+        f.write('G91')
+        for layer in range(num_layers):
+            f.write("\nG1 Z1")
+            if (layer+1)%2 != 0: # odd
+                for i in range(len(p_list_A)):
+                    f.write('\nG1 X' + str(p_list_A[i][0]) + ' Y' + str(p_list_A[i][1]))
+            else:
+                for i in range(len(p_list_B)):
+                    f.write('\nG1 X' + str(p_list_B[i][0]) + ' Y' + str(p_list_B[i][1]))
+
+
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    image1 = 'flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
-    image2 = 'happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
-    image3 = 'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
-    image4 = 'flask_30pix.png'  # 'temp_sarah_waz.png'
+    # image1 = 'Heart50x50.png'#'checkerboard_30x30pix.png' #'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
+    # image2 = 'Heart50x50.png'#'checkerboard_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
+    # image3 = 'Heart50x50.png'#'checkerboard_30x30pix.png' #'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
+    # image4 = 'Heart50x50.png'#'checkerboard_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
+    image1 = 'checkerboard_30x30pix.png' #'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
+    image2 = 'checkerboard_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
+    image3 = 'checkerboard_30x30pix.png' #'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
+    image4 = 'checkerboard_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
+
+    txt_export = '----testingOFFSET----.txt'
 
     image_bottom = 'flask_30pix.png'
     image_top = 'happy_chemistry_spill_30pix.png'
@@ -405,8 +499,8 @@ if __name__ == '__main__':
     z_var = "D"  # for use in aerotech
 
     ## Offset compensation
-    offset_ON = 10
-    offset_OFF = 10
+    offset_ON = 5
+    offset_OFF = 5
 
     ## Valve Toggle
     #### Toggle ON (grouped by face of cube)
@@ -461,24 +555,80 @@ if __name__ == '__main__':
     image_list = [image1, image2, image3, image4]
 
     output = image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, wall_thickness, offset_ON, offset_OFF)
+    G_list = output[0]
+    var_list = output[1]
+    dist_list = output[2]
+    command_list = output[3]
 
-    # print(output[2])
+    #image2gcode_spiral_cube2(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, wall_thickness, offset_ON, offset_OFF)
+
+    print(dist_list)
+    print(command_list)
     print('--------------------')
-    for i in range(len(output[0])):
-        
-        if output[3][i] != '':
-            offset_dist = output[2][i] - offset_dist
-            if offset_dist < 0:
-                
-                
-        else:
-            offset_dist = output[2][i] + offset_dist
-        
-        
-        
-        print(str(output[0][i]) + ' ' + str(output[1][i]) + str(output[2][i]))
-        print(output[3][i])
+    offset = 2
+    for i in range(len(G_list)):
+        if command_list[i] != '':  # if there is a command associated with the distance
+
+            offset_dist = abs(dist_list[i]) - offset
+            add_offset = offset
+            if dist_list[i] < 0:
+                offset_dist = -offset_dist
+                add_offset = -offset
+
+            dist_list[i] = offset_dist
+
+            dist_list[i+1] = dist_list[i+1] + add_offset
+
+            # if offset_dist >= 0:
+            #
+            #     if dist_list[i] < 0:
+            #         offset_dist = -offset_dist
+            #
+            #     dist_list[i] = offset_dist
+            #
+            #     if var_list[i] == var_list[i+1]:
+            #         if dist_list[i+1] < 0:
+            #             offset = -offset
+            #
+            #         dist_list[i+1] = dist_list[i+1] + offset
+            #
+            # else:
+            #     count = 0
+            #     while offset_dist < 0:
+            #         offset_new = abs(offset_dist)
+            #         count += 1
+            #         offset_dist = abs(dist_list[i-count]) - offset_new
+            #
+            #     if dist_list[i-count] < 0:
+            #         offset_dist = - offset_dist
+            #
+            #     if var_list[i] == var_list[i+1]:
+            #         dist_list[i + 1] = abs(dist_list[i + 1]) + abs(dist_list[i])
+            #         if dist_list[i+1] < 0:
+            #             dist_list[i + 1] = - dist_list[i+1]
+            #
+            #     dist_list[i-count] = dist_list[i-count] + offset
+            #
+            #     dist_list.insert(i - (count +1), offset_dist)
+            #     G_list.insert(i - (count +1), G_list[i-count])
+            #     command_list.insert(i - (count +1), command_list[i])
+            #
+            #     dist_list[i] = 0
+            #     command_list[i] = ''
 
 
-    #spiral_matrix(image_bottom)
+
+
+
+
+
+    with open(txt_export, 'w') as f:
+        f.write('G91\n')
+        for i in range(len(G_list)):
+            if var_list[i] == 'Z':
+                f.write('\n------ new layer')
+            f.write('\n' + str(G_list[i]) + ' ' + str(var_list[i]) + str(dist_list[i]))
+            f.write('\n' + command_list[i])
+
+
 
