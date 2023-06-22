@@ -126,23 +126,15 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         outer_edge_list_even = p_list_even[-4:]
 
     '''This section creates the final print path that will be used'''
-    dirNorth_faceEast_ON = toggle_ON_list[0]
-    dirNorth_faceWest_ON = toggle_ON_list[1]
-    dirSouth_faceEast_ON = toggle_ON_list[2]
-    dirSouth_faceWest_ON = toggle_ON_list[3]
-    dirWest_faceNorth_ON = toggle_ON_list[4]
-    dirWest_faceSouth_ON = toggle_ON_list[5]
-    dirEast_faceNorth_ON = toggle_ON_list[6]
-    dirEast_faceSouth_ON = toggle_ON_list[7]
-
-    dirNorth_faceEast_OFF = toggle_OFF_list[0]
-    dirNorth_faceWest_OFF = toggle_OFF_list[1]
-    dirSouth_faceEast_OFF = toggle_OFF_list[2]
-    dirSouth_faceWest_OFF = toggle_OFF_list[3]
-    dirWest_faceNorth_OFF = toggle_OFF_list[4]
-    dirWest_faceSouth_OFF = toggle_OFF_list[5]
-    dirEast_faceNorth_OFF = toggle_OFF_list[6]
-    dirEast_faceSouth_OFF = toggle_OFF_list[7]
+    # faceEast_ON = toggle_ON_list[0]
+    # faceWest_ON = toggle_ON_list[1]
+    # faceNorth_ON = toggle_ON_list[2]
+    # faceSouth_ON = toggle_ON_list[3]
+    #
+    # faceEast_OFF = toggle_OFF_list[0]
+    # faceWest_OFF = toggle_OFF_list[1]
+    # faceNorth_OFF = toggle_OFF_list[2]
+    # faceSouth_OFF = toggle_OFF_list[3]
 
     z = z_height
     prev_pixel = ''
@@ -193,45 +185,18 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
                 ### This section defines the print direction based on the face_list and the dir_list
                 if current_dir == 'North':
-                    if current_face == 'East':
-                        valve_on = dirNorth_faceEast_ON
-                        valve_OFF = dirNorth_faceEast_OFF
-                    elif current_face == 'West':
-                        valve_on = dirNorth_faceWest_ON
-                        valve_OFF = dirNorth_faceWest_OFF
-
                     variable = 'Y'
                     sign = 1
 
                 if current_dir == 'South':
-                    if current_face == 'East':
-                        valve_on = dirSouth_faceEast_ON
-                        valve_OFF = dirSouth_faceEast_OFF
-                    elif current_face == 'West':
-                        valve_on = dirSouth_faceWest_ON
-                        valve_OFF = dirSouth_faceWest_OFF
-
                     variable = 'Y'
                     sign = -1
 
                 if current_dir == 'East':
-                    if current_face == 'North':
-                        valve_on = dirEast_faceNorth_ON
-                        valve_OFF = dirEast_faceNorth_OFF
-                    elif current_face == 'South':
-                        valve_on = dirEast_faceSouth_ON
-                        valve_OFF = dirEast_faceSouth_OFF
                     variable = 'X'
                     sign = 1
 
                 if current_dir == 'West':
-                    if current_face == 'North':
-                        valve_on = dirWest_faceNorth_ON
-                        valve_OFF = dirWest_faceNorth_OFF
-                    elif current_face == 'South':
-                        valve_on = dirWest_faceSouth_ON
-                        valve_OFF = dirWest_faceSouth_OFF
-
                     variable = 'X'
                     sign = -1
 
@@ -251,6 +216,9 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
                     prev_pixel = white
 
+                    image_number = 0
+                    append_image_number = 0
+
 
                 elif current_face == 'East':  # Image 1, nozzle moving North or South
                     image_number = 0
@@ -258,15 +226,20 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                     current_image_pixels = current_image_pixels[1:]  # deletes first pixel because it is replaced by +Z movement
 
                     if current_dir == 'North':
+                        append_image_number = image_number + 1
                         img_pix_current = current_image_pixels[offset:] # deletes first n pixels
 
                         if wall_thickness == 1 and layer == 0:
                             img_pix_current = current_image_pixels
 
-                        next_image_pixels = img_list[image_number + 1][layer]
+                        next_image_pixels = img_list[append_image_number][layer]
                         img_pix_append = next_image_pixels[0:offset] # first n pixels of next image
 
+
+
                     else:
+                        append_image_number = image_number
+
                         current_image_pixels = np.flip(current_image_pixels) # flips orders of pixels because print direction is "negative"
                         img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
 
@@ -275,36 +248,40 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                             img_pix_append = np.append(img_pix_append, white)
 
                         if wall_thickness == 1:
-                            next_image_pixels = img_list[image_number][layer+1]
+                            next_image_pixels = img_list[append_image_number][layer+1]
                             img_pix_append = next_image_pixels[0:offset]
 
-
                         if wall_thickness == 'solid' or wall_thickness > 1:
-                            if layer != len(img_list[image_number]) - 1:
-                                next_image_pixels = img_list[image_number][layer + 1]
+                            if layer != len(img_list[image_number]) - 1: # if not on the last layer
+                                next_image_pixels = img_list[append_image_number][layer + 1]
                                 img_pix_append = next_image_pixels[0:offset]  # first n pixels of next image
                             else:
                                 img_pix_append = []
                                 for o in range(offset):  # adds n white pixels
                                     img_pix_append.append(white)
 
+
+
                 elif current_face == 'North':  # Image 2, nozzle moving East or West
                     image_number = 1
                     current_image_pixels = img_list[image_number][layer]
                     if current_dir == 'West':
                         img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
-
-                        next_image_pixels = img_list[image_number + 1][layer]
+                        append_image_number = image_number + 1
+                        next_image_pixels = img_list[append_image_number][layer]
                         img_pix_append = next_image_pixels[0:offset]  # first n pixels of next image
+
 
 
                     else:
                         current_image_pixels = np.flip(current_image_pixels)  # flips orders of pixels because print direction is "negative"
                         img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
-
-                        next_image_pixels = img_list[image_number - 1][layer]
+                        append_image_number = image_number - 1
+                        next_image_pixels = img_list[append_image_number][layer]
                         next_image_pixels = np.flip(next_image_pixels)
                         img_pix_append = next_image_pixels[0:offset]
+
+
 
 
                 elif current_face == 'West':  # Image 3, nozzle moving North or South
@@ -312,16 +289,17 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                     current_image_pixels = img_list[image_number][layer]
                     if current_dir == 'South':
                         img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
-
-                        next_image_pixels = img_list[image_number + 1][layer]
+                        append_image_number = image_number + 1
+                        next_image_pixels = img_list[append_image_number][layer]
                         img_pix_append = next_image_pixels[0:offset]  # first n pixels of next image
+
 
 
                     else:
                         current_image_pixels = np.flip(current_image_pixels)  # flips orders of pixels because print direction is "negative"
                         img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
-
-                        next_image_pixels = img_list[image_number - 1][layer]
+                        append_image_number = image_number - 1
+                        next_image_pixels = img_list[append_image_number][layer]
                         next_image_pixels = np.flip(next_image_pixels)
                         img_pix_append = next_image_pixels[0:offset]
 
@@ -333,9 +311,10 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
                     if current_dir == 'East':
                         img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
+                        append_image_number = image_number
 
                         if layer != len(img_list[image_number])-1:
-                            next_image_pixels = img_list[image_number][layer+1]
+                            next_image_pixels = img_list[append_image_number][layer+1]
                             next_image_pixels = np.flip(next_image_pixels)
                             img_pix_append = next_image_pixels[0:offset]  # first n pixels of next image
                         else:
@@ -350,21 +329,41 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                         else:
                             img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
 
-
-                        next_image_pixels = img_list[image_number - 1][layer]
+                        append_image_number = image_number - 1
+                        next_image_pixels = img_list[append_image_number][layer]
                         next_image_pixels = np.flip(next_image_pixels)
                         img_pix_append = next_image_pixels[0:offset]
 
+                current_image_valve_ON = toggle_ON_list[image_number]
+                current_image_valve_OFF = toggle_OFF_list[image_number]
+
+                append_image_valve_ON = toggle_ON_list[append_image_number]
+                append_image_valve_OFF = toggle_OFF_list[append_image_number]
+
+                valve_ON_list = []
+                valve_OFF_list = []
+                for elem in img_pix_current:
+                    valve_ON_list.append(current_image_valve_ON)
+                    valve_OFF_list.append(current_image_valve_OFF)
+
+                for elem in img_pix_append:
+                    valve_ON_list.append(append_image_valve_ON)
+                    valve_OFF_list.append(append_image_valve_OFF)
+
                 current_img = np.append(img_pix_current, img_pix_append)  # part of next image starts at end
 
-                for pixel in current_img:
+                for pix in range(len(current_img)):
+                    pixel = current_img[pix]
+                    valve_ON = valve_ON_list[pix]
+                    valve_OFF = valve_OFF_list[pix]
+
                     if pixel != white:
                         pixel = black
 
                     if prev_pixel != pixel:
                         if pixel == black:
                             print('G1 ' + str(variable) + str(sign * (current_distance)))
-                            print(valve_on)
+                            print(valve_ON)
 
                         elif pixel != black and prev_pixel != '':
                             if visualize_ON == True:
@@ -420,54 +419,79 @@ if __name__ == '__main__':
 
     ## Valve Toggle
     #### Toggle ON (grouped by face of cube)
-    dirNorth_faceEast_ON = 'NE ON'
-    dirSouth_faceEast_ON = 'SE ON'
+    faceEast_ON = 'E ON'
 
-    dirNorth_faceWest_ON = 'NW ON'
-    dirSouth_faceWest_ON = 'SW ON'
+    faceWest_ON = 'W ON'
 
-    dirWest_faceNorth_ON = 'WN ON'
-    dirEast_faceNorth_ON = 'EN ON'
+    faceNorth_ON = 'N ON'
 
-    dirWest_faceSouth_ON = 'WS ON'
-    dirEast_faceSouth_ON = 'ES ON'
+    faceSouth_ON = 'S ON'
+
 
     #### Toggle OFF (grouped by face of cube)
-    dirNorth_faceEast_OFF = 'NE OFF'
-    dirSouth_faceEast_OFF = 'SE OFF'
+    faceEast_OFF = 'E OFF'
 
-    dirNorth_faceWest_OFF = 'NW OFF'
-    dirSouth_faceWest_OFF = 'SW OFF'
+    faceWest_OFF = 'W OFF'
 
-    dirWest_faceNorth_OFF = 'WN OFF'
-    dirEast_faceNorth_OFF = 'EN OFF'
+    faceNorth_OFF = 'N OFF'
 
-    dirWest_faceSouth_OFF = 'WS OFF'
-    dirEast_faceSouth_OFF = 'ES OFF'
+    faceSouth_OFF = 'S OFF'
+
 
     ##################################################################################################
     toggle_ON_list = [
-        dirNorth_faceEast_ON,
-        dirNorth_faceWest_ON,
-        dirSouth_faceEast_ON,
-        dirSouth_faceWest_ON,
-        dirWest_faceNorth_ON,
-        dirWest_faceSouth_ON,
-        dirEast_faceNorth_ON,
-        dirEast_faceSouth_ON
+        faceEast_ON,
+        faceNorth_ON,
+        faceWest_ON,
+        faceSouth_ON,
     ]
 
     toggle_OFF_list = [
-        dirNorth_faceEast_OFF,
-        dirNorth_faceWest_OFF,
-        dirSouth_faceEast_OFF,
-        dirSouth_faceWest_OFF,
-        dirWest_faceNorth_OFF,
-        dirWest_faceSouth_OFF,
-        dirEast_faceNorth_OFF,
-        dirEast_faceSouth_OFF
+        faceEast_OFF,
+        faceNorth_OFF,
+        faceWest_OFF,
+        faceSouth_OFF,
+
     ]
 
     image_list = [image1, image2, image3, image4]
 
     output = image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var, wall_thickness, offset)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
