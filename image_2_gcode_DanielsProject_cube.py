@@ -86,7 +86,6 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         dir_list_A.append('East')
         face_list_A.append('South')
 
-    print(p_list_A)
 
     # B layers go inward
     p_list_A_reversed = list(reversed(p_list_A))
@@ -212,14 +211,24 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                 ### This section defines when each pixel will be printed (includes offets)
                 if p_list[coordinates] == internal_offset:  # this takes care of the offset for the first pixels in the 1st image (which need to be turned on during an internal wall)
 
-                    img_pix_append = img_list[0][layer][0:offset]  # takes first n pixels of image 1 to turn on early
-                    for dist in p_list[coordinates]:
-                        if dist != 0:
-                            distance = abs(dist) - offset
-                            img_pix_current = []
-                            for num in range(int(distance)):
-                                img_pix_current = np.append(img_pix_current, white)
+                    if current_dir == 'East':
+                        img_pix_append = img_list[0][layer][0:offset]  # takes first n pixels of image 1 to turn on early
+                        for dist in p_list[coordinates]:
+                            if dist != 0:
+                                distance = abs(dist) - offset
+                                img_pix_current = []
+                                for num in range(int(distance)):
+                                    img_pix_current = np.append(img_pix_current, white)
 
+                    else:
+                        for dist in p_list[coordinates]:
+                            if dist != 0:
+                                distance = abs(dist)/2
+                                img_pix_current = []
+                                for num in range(int(distance)):
+                                    img_pix_current = np.append(img_pix_current, white)
+
+                        img_pix_append = img_pix_current
                     prev_pixel = white
 
                     image_number = 0
@@ -257,13 +266,13 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                             img_pix_append = next_image_pixels[0:offset]
 
                         if wall_thickness == 'solid' or wall_thickness > 1:
-                            if layer != len(img_list[image_number]) - 1:  # if not on the last layer
-                                next_image_pixels = img_list[append_image_number][layer + 1]
-                                img_pix_append = next_image_pixels[0:offset]  # first n pixels of next image
-                            else:
-                                img_pix_append = []
-                                for o in range(offset):  # adds n white pixels
-                                    img_pix_append.append(white)
+                            # if layer != len(img_list[image_number]) - 1:  # if not on the last layer
+                            #     next_image_pixels = img_list[append_image_number][layer + 1]
+                            #     img_pix_append = next_image_pixels[0:offset]  # first n pixels of next image
+                            # else:
+                            img_pix_append = []
+                            for o in range(offset):  # adds n white pixels
+                                img_pix_append.append(white)
 
 
 
@@ -415,28 +424,23 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    image1 = 'checkerboard_30x30pix.png'#'blue_jay_75x75pics.png'#'checkerboard_30x30pix.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
-    image2 = 'checkerboard_30x30pix.png'#'blue_jay_75x75pics.png'#'checkerboard_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
-    image3 = 'checkerboard_30x30pix.png'#'blue_jay_75x75pics.png'#'checkerboard_30x30pix.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
-    image4 = 'checkerboard_30x30pix.png'#'blue_jay_75x75pics.png'#'checkerboard_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
-
-    txt_export = '----testingOFFSET----.txt'
+    image1 = 'checkerboard_30x30pix.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
+    image2 = 'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
+    image3 = 'checkerboard_30x30pix.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
+    image4 = 'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
 
 
     ## To view in g-code simulator (https://nraynaud.github.io/webgcode/):
     visualize_ON = True
 
     ## Geometry
-    wall_thickness = 'solid'  # 'solid'  # OPTIONS: a number or 'solid'
+    wall_thickness = 2  # 'solid'  # OPTIONS: a number or 'solid'
     fil_width = 0.5 # filament spacing
     z_height = 0.5  # layer height
     z_var = "D"  # for use in aerotech
 
-    scale_x = 1
-    scale_y = 1
-
     ## Offset compensation
-    offset = 1.5 # must be an even multiple of the filament width
+    offset = .5 # in mm - must be an integar multiple of the filament width
 
 
     ## Valve Toggle
