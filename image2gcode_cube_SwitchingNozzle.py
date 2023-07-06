@@ -90,7 +90,6 @@ def togglepress():
 * 1 pixel = 1 mm
 '''
 
-
 def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height, z_var,wall_thickness, offset):
     black = 0
     white = 255
@@ -102,15 +101,16 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
     for image in image_list:
         img = cv2.imread(image, 0)
         img = cv2.flip(img, 0)  # flip over y-axis
+
         #img = cv2.resize(img, None, fx=1 / scale_x, fy=1 / scale_y, interpolation=cv2.INTER_LINEAR)
 
         for i in range(len(img)):
-            for j in range(len(img[i])):
-                    pixel = img[i][j]
-                    if abs(pixel - 0) < abs(pixel - 255):
-                        img[i][j] = 0
-                    else:
-                        img[i][j] = 255
+            # for j in range(len(img[i])):
+            #         pixel = img[i][j]
+            #         if abs(pixel - 0) < abs(pixel - 255):
+            #             img[i][j] = 0
+            #         else:
+            #             img[i][j] = 255
             cv2.imwrite('CheckImage_' +str(count) +'.png', img)
 
         img_list.append(img)  # converts images to pixels
@@ -267,12 +267,17 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         for coordinates in range(len(p_list)):
 
             if p_list[coordinates] not in outer_edge_list and p_list[coordinates] != internal_offset:
-                if black_ON_flag == True:
-                    print(toggle_ON_white)
-                    print(toggle_OFF_black)
+                if coordinates == 0:
+                    ON_color = 0
+                    print(toggle_ON_list[0])
 
-                    black_ON_flag = False
-                    white_ON_flag = True
+                if ON_color != 0:
+                    print(toggle_ON_list[0])
+                    print(toggle_OFF_list[ON_color])
+                    ON_color = 0
+
+                    # black_ON_flag = False
+                    # white_ON_flag = True
                 print('G1 X' + str(p_list[coordinates][0]*scale_factor) + ' Y' + str(p_list[coordinates][1]*scale_factor))
 
             else:
@@ -446,11 +451,14 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
                 current_img = np.append(img_pix_current, img_pix_append)  # part of next image starts at end
 
-                toggle_ON_black = toggle_ON_list[1]
-                toggle_OFF_black = toggle_OFF_list[1]
+                # toggle_ON_white = toggle_ON_list[0]
+                # toggle_OFF_white = toggle_OFF_list[0]
+                #
+                # toggle_ON_black = toggle_ON_list[1]
+                # toggle_OFF_black = toggle_OFF_list[1]
 
-                toggle_ON_white = toggle_ON_list[0]
-                toggle_OFF_white = toggle_OFF_list[0]
+
+
 
 
 
@@ -458,95 +466,93 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                 for pix in range(len(current_img)):
                     pixel = current_img[pix]
 
-                    if pixel != white:
-                        pixel = black
+                    # if pixel != white and pixel != black:
+                    #     pixel = gray
 
                     if layer == 0 and first_toggle == True:
-                        if pixel == black:
-                            print(toggle_ON_black)
-                            black_ON_flag = True
-                            white_ON_flag = False
+                        if pixel == white:
+                            color_number = 0
+                            # print(toggle_ON_white)
+                            # black_ON_flag = False
+                            # white_ON_flag = True
+                        elif pixel == black:
+                            color_number = 1
+                            # print(toggle_ON_black)
+                            # black_ON_flag = True
+                            # white_ON_flag = False
                         else:
-                            print(toggle_ON_white)
-                            black_ON_flag = False
-                            white_ON_flag = True
+                            color_number = 2
 
+                        print(toggle_ON_list[color_number])
+                        ON_color = color_number
                         first_toggle = False
 
                     elif prev_pixel != pixel:
-                        if pixel == black:
-                            if current_distance != 0:
-                                print('G1 ' + str(variable) + str(sign * (current_distance*scale_factor)))
+                        if pixel == white:
+                            color_number = 0
 
-                            print(toggle_ON_black)
-                            print(toggle_OFF_white)
-                            black_ON_flag = True
-                            white_ON_flag = False
+                        elif pixel == black:
+                            color_number = 1
+
+                        else:
+                            color_number = 2
 
 
-                        elif pixel != black and prev_pixel != '':
-                            if current_distance != 0:
-                                if visualize_ON == True:
-                                    print('G0 ' + str(variable) + str(sign * (current_distance*scale_factor)))
+                        if current_distance != 0:
+                            if visualize_ON == ON_color:
+                                print('G0 ' + str(variable) + str(sign * (current_distance * scale_factor)))
+                            else:
+                                print('G1 ' + str(variable) + str(sign * (current_distance * scale_factor)))
 
-                                else:
-                                    print('G1 ' + str(variable) + str(sign * (current_distance*scale_factor)))
 
-                            print(toggle_ON_white)
-                            print(toggle_OFF_black)
-
-                            black_ON_flag = False
-                            white_ON_flag = True
+                        print(toggle_ON_list[color_number])
+                        print(toggle_OFF_list[ON_color])
+                        ON_color = color_number
 
                         current_distance = 0
 
                     current_distance += 1
                     prev_pixel = pixel
 
-                    if pix == len(img_pix_current) - 1:
-                        if pixel == white or visualize_ON == False:
-                            print('G1 ' + str(variable) + str(sign * (current_distance*scale_factor)))
-                        else:
+                    if pix == len(img_pix_current) - 1 and current_distance != 0:
+                        if visualize_ON == ON_color:
                             print('G0 ' + str(variable) + str(sign * (current_distance*scale_factor)))
+                        else:
+                            print('G1 ' + str(variable) + str(sign * (current_distance * scale_factor)))
 
-                        # if black_ON_flag == True:
-                        #     print(toggle_ON_white)
-                        #     print(toggle_OFF_black)
-                        #
-                        #     black_ON_flag = False
-                        #     white_ON_flag = True
 
                         #prev_pixel = ''
                         current_distance = 0
-
-                if pixel == white or visualize_ON == False:
-                    print('G1 ' + str(variable) + str(sign * (current_distance*scale_factor)))
-                else:
-                    print('G0 ' + str(variable) + str(sign * (current_distance*scale_factor)))
+                if current_distance != 0:
+                    if visualize_ON == ON_color:
+                        print('G0 ' + str(variable) + str(sign * (current_distance * scale_factor)))
+                    else:
+                        print('G1 ' + str(variable) + str(sign * (current_distance * scale_factor)))
 
         print('G1 ' + str(z_var) + str(z))
 
-    if black_ON_flag == True:
-        print(toggle_OFF_black)
-    else:
-        print(toggle_OFF_white)
+    # if black_ON_flag == True:
+    #     print(toggle_OFF_black)
+    # else:
+    #     print(toggle_OFF_white)
+
+    print(toggle_OFF_list[ON_color])
 
     return G_list, var_list, dist_list, command_list
 
-
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    image1 = 'Missouri.png'#'checkerboard_30x30pix.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
-    image2 = 'VA_is4LOVERS.png'#'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
-    image3 = 'Missouri.png'#'checkerboard_30x30pix.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
-    image4 = 'VA_is4LOVERS.png'#'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
+    image1 = 'img.png'#'checkerboard_invert_30x30pix.png'#'blue_jay_75x75pixs_3colors.png' #'Missouri.png'#'checkerboard_30x30pix.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
+    image2 = 'img.png'#'checkerboard_30x30pix.png'#'blue_jay_75x75pixs_3colors.png' #'VA_is4LOVERS.png'#'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
+    image3 = 'img.png'#'checkerboard_invert_30x30pix.png'#'blue_jay_75x75pixs_3colors.png' #'Missouri.png'#'checkerboard_30x30pix.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
+    image4 = 'img.png'#'checkerboard_30x30pix.png'#'blue_jay_75x75pixs_3colors.png' #'VA_is4LOVERS.png'#'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
 
 
     ## To view in g-code simulator (https://nraynaud.github.io/webgcode/):
-    visualize_ON = False
+    visualize_ON = 1 # 0 = white, 1 = black, 2 = gray
 
     ## Geometry
-    wall_thickness = 2 # 'solid'  # OPTIONS: a number or 'solid'
+    wall_thickness = 5 # 'solid'  # OPTIONS: a number or 'solid'
     fil_width = 1 # filament spacing
     z_height = 1  # layer height
     z_var = "Z"  # for use in aerotech
@@ -554,13 +560,15 @@ if __name__ == '__main__':
     ## Offset compensation
     offset = 0 # in mm - must be an integar multiple of the filament width
 
-    pressure = [22, 22]
+    pressure = [22, 22, 22]
 
     ######################################################################################################################
-    com = ["serialPort1", "serialPort2"]
+    com = ["serialPort1", "serialPort2", "serialPort3"]
 
     setpress1 = str('\n\r' + com[0] + '.write(' + str(setpress(pressure[0])) + ')')  # material 1
     setpress2 = str('\n\r' + com[1] + '.write(' + str(setpress(pressure[1])) + ')')  # material 2
+    setpress3 = str('\n\r' + com[2] + '.write(' + str(setpress(pressure[2])) + ')')  # material 2
+
 
     white_ON = str('\n\r' + com[0] + '.write(' + str(togglepress()) + ')')  # turn on material 1
     white_OFF = white_ON
@@ -568,16 +576,20 @@ if __name__ == '__main__':
     black_ON = str('\n\r' + com[1] + '.write(' + str(togglepress()) + ')')  # start 2nd material
     black_OFF = black_ON  # '\n'  # "\nM792 ;SEND Ultimus_IO["+str(comRight)+"]= 0" #stop 2nd material
 
+    gray_ON = str('\n\r' + com[2] + '.write(' + str(togglepress()) + ')')  # start 3rd material
+    gray_OFF = gray_ON
 
     ##################################################################################################
     toggle_ON_list = [
         white_ON,
-        black_ON
+        black_ON,
+        gray_ON
     ]
 
     toggle_OFF_list = [
         white_OFF,
-        black_OFF
+        black_OFF,
+        gray_OFF
     ]
 
     image_list = [image1, image2, image3, image4]
