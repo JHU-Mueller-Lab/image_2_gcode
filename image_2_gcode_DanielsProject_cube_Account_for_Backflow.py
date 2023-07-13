@@ -23,6 +23,8 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         print('INPUT ERROR: offset_large must be greater than or equal to the offset.', '\nChange inputs so that offset_large >= offset.')
         sys.exit()
 
+
+
     for image in image_list:
         img = cv2.imread(image, 0)
         img = cv2.flip(img, 0)  # flip over y-axis
@@ -492,7 +494,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 - visualize_ON = True shows the images in red by making black sections into G0 moves; to make a printable gcode, make sure to visualize_ON = False
 - you can scale your image using the fil_width. if fil_width < 1, the images (and cube) will shrink. if fil_width > 1, the images will be enlarged. 
 - make sure the offsets are an even factor of the fil_width (e.g., offset/fil_width = integar)
-- you can define a larger offset length for when the layers have not been on for a long time.  
+- to account for backflow, you can define a larger offset length for when the layers have not been on for a long time.  
 '''
 
 # Press the green button in the gutter to run the script.
