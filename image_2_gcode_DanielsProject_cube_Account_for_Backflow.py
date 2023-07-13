@@ -17,10 +17,11 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         sys.exit()
 
     offset = int(offset / scale_factor)
-    offset_large = int(offset / scale_factor)
+    offset_large = int(offset_large / scale_factor)
 
-    if offset_large == 0:
-        offset_large = offset
+    if offset > offset_large:
+        print('INPUT ERROR: offset_large must be greater than or equal to the offset.', '\nChange inputs so that offset_large >= offset.')
+        sys.exit()
 
     for image in image_list:
         img = cv2.imread(image, 0)
@@ -515,8 +516,8 @@ if __name__ == '__main__':
     z_var = "A"  # for use in aerotech
 
     ## Offset compensation
-    offset = 0 #1.5 #.6
-    offset_large = 0#3 #5#1.2# this is the offset used when materials have been turned off too long
+    offset = 1.5 #this offset is used when materials have been on for an extended period of time. (offset/fil_width = integar)
+    offset_large = 3  # this is the offset used when materials have been turned off too long and accounts for backflow. (offset_large/fil_width = integar)
 
     ## Valve Toggle
     #### Toggle ON (grouped by face of cube)
