@@ -11,10 +11,26 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
     black = 0
     white = 255
     img_list = []
+    scale_factor = fil_width
+    count = 0
+    offset = int(offset/fil_width)
+
     for image in image_list:
         img = cv2.imread(image, 0)
         img = cv2.flip(img, 0)  # flip over y-axis
+        #img = cv2.resize(img, None, fx=1 / scale_x, fy=1 / scale_y, interpolation=cv2.INTER_LINEAR)
+
+        for i in range(len(img)):
+            for j in range(len(img[i])):
+                    pixel = img[i][j]
+                    if abs(pixel - 0) < abs(pixel - 255):
+                        img[i][j] = 0
+                    else:
+                        img[i][j] = 255
+            cv2.imwrite('CheckImage_' +str(count) +'.png', img)
+
         img_list.append(img)  # converts images to pixels
+        count += 1
 
     img_shape = img_list[0].shape  # finds width and height of image (will use the first image in the last)
     height = img_shape[0]
@@ -24,7 +40,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
     '''This section creates the spiral print path'''
     if wall_thickness == 'solid':
-        current_length = fil_width
+        current_length = 1
     else:
         current_length = width - (2 * wall_thickness - 1)
 
@@ -44,13 +60,13 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         # N -> W -> S -> E (A layers go outward)
         p1 = [0, current_length]  # NORTH
 
-        current_length += fil_width
+        current_length += 1#fil_width
 
         p2 = [-current_length, 0]  # WEST
         p3 = [0, -current_length]  # SOUTH
 
         if current_length < width:
-            current_length += fil_width
+            current_length += 1#fil_width
 
         p4 = [current_length, 0]  # EAST
 
@@ -69,6 +85,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         p_list_A.append(p4)
         dir_list_A.append('East')
         face_list_A.append('South')
+
 
     # B layers go inward
     p_list_A_reversed = list(reversed(p_list_A))
@@ -163,7 +180,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
         for coordinates in range(len(p_list)):
 
             if p_list[coordinates] not in outer_edge_list and p_list[coordinates] != internal_offset:
-                print('G1 X' + str(p_list[coordinates][0]) + ' Y' + str(p_list[coordinates][1]))
+                print('G1 X' + str(p_list[coordinates][0]*scale_factor) + ' Y' + str(p_list[coordinates][1]*scale_factor))
 
             else:
                 current_face = face_list[coordinates]
@@ -190,17 +207,28 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
                 current_distance = 0
 
+
                 ### This section defines when each pixel will be printed (includes offets)
                 if p_list[coordinates] == internal_offset:  # this takes care of the offset for the first pixels in the 1st image (which need to be turned on during an internal wall)
 
-                    img_pix_append = img_list[0][layer][0:offset]  # takes first n pixels of image 1 to turn on early
-                    for dist in p_list[coordinates]:
-                        if dist != 0:
-                            distance = abs(dist) - offset
-                            img_pix_current = []
-                            for num in range(distance):
-                                img_pix_current = np.append(img_pix_current, white)
+                    if current_dir == 'East':
+                        img_pix_append = img_list[0][layer][0:offset]  # takes first n pixels of image 1 to turn on early
+                        for dist in p_list[coordinates]:
+                            if dist != 0:
+                                distance = abs(dist) - offset
+                                img_pix_current = []
+                                for num in range(int(distance)):
+                                    img_pix_current = np.append(img_pix_current, white)
 
+                    else:
+                        for dist in p_list[coordinates]:
+                            if dist != 0:
+                                distance = abs(dist)/2
+                                img_pix_current = []
+                                for num in range(int(distance)):
+                                    img_pix_current = np.append(img_pix_current, white)
+
+                        img_pix_append = img_pix_current
                     prev_pixel = white
 
                     image_number = 0
@@ -209,8 +237,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                 elif current_face == 'East':  # Image 1, nozzle moving North or South
                     image_number = 0
                     current_image_pixels = img_list[image_number][layer]
-                    current_image_pixels = current_image_pixels[
-                                           1:]  # deletes first pixel because it is replaced by +Z movement
+                    current_image_pixels = current_image_pixels[1:]  # deletes first pixel because it is replaced by +Z movement
 
                     if current_dir == 'North':
                         append_image_number = image_number + 1
@@ -227,8 +254,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                     else:
                         append_image_number = image_number
 
-                        current_image_pixels = np.flip(
-                            current_image_pixels)  # flips orders of pixels because print direction is "negative"
+                        current_image_pixels = np.flip(current_image_pixels)  # flips orders of pixels because print direction is "negative"
                         img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
 
                         img_pix_append = []
@@ -240,13 +266,13 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                             img_pix_append = next_image_pixels[0:offset]
 
                         if wall_thickness == 'solid' or wall_thickness > 1:
-                            if layer != len(img_list[image_number]) - 1:  # if not on the last layer
-                                next_image_pixels = img_list[append_image_number][layer + 1]
-                                img_pix_append = next_image_pixels[0:offset]  # first n pixels of next image
-                            else:
-                                img_pix_append = []
-                                for o in range(offset):  # adds n white pixels
-                                    img_pix_append.append(white)
+                            # if layer != len(img_list[image_number]) - 1:  # if not on the last layer
+                            #     next_image_pixels = img_list[append_image_number][layer + 1]
+                            #     img_pix_append = next_image_pixels[0:offset]  # first n pixels of next image
+                            # else:
+                            img_pix_append = []
+                            for o in range(offset):  # adds n white pixels
+                                img_pix_append.append(white)
 
 
 
@@ -262,8 +288,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
 
                     else:
-                        current_image_pixels = np.flip(
-                            current_image_pixels)  # flips orders of pixels because print direction is "negative"
+                        current_image_pixels = np.flip(current_image_pixels)  # flips orders of pixels because print direction is "negative"
                         img_pix_current = current_image_pixels[offset:]  # deletes first n pixels
                         append_image_number = image_number - 1
                         next_image_pixels = img_list[append_image_number][layer]
@@ -343,7 +368,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
                 current_img = np.append(img_pix_current, img_pix_append)  # part of next image starts at end
 
-
+                valve_ON_flag = False
                 ##### This section determines where to turn pixels on and off in the print
                 for pix in range(len(current_img)):
                     pixel = current_img[pix]
@@ -356,7 +381,7 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                     if prev_pixel != pixel:
                         if pixel == black:
                             if current_distance != 0:
-                                print('G1 ' + str(variable) + str(sign * (current_distance)))
+                                print('G1 ' + str(variable) + str(sign * (current_distance*scale_factor)))
                             print(valve_ON)
                             valve_ON_flag = True
 
@@ -364,10 +389,10 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                         elif pixel != black and prev_pixel != '':
                             if current_distance != 0:
                                 if visualize_ON == True:
-                                    print('G0 ' + str(variable) + str(sign * (current_distance)))
+                                    print('G0 ' + str(variable) + str(sign * (current_distance*scale_factor)))
 
                                 else:
-                                    print('G1 ' + str(variable) + str(sign * (current_distance)))
+                                    print('G1 ' + str(variable) + str(sign * (current_distance*scale_factor)))
 
                             print(valve_OFF)
                             valve_ON_flag = False
@@ -377,22 +402,21 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
                     current_distance += 1
                     prev_pixel = pixel
 
-                    if pix == len(img_pix_current) - 1 and valve_ON_flag == True:
+                    if pix == len(img_pix_current) - 1:
                         if pixel == white or visualize_ON == False:
-                            print('G1 ' + str(variable) + str(sign * (current_distance)))
+                            print('G1 ' + str(variable) + str(sign * (current_distance*scale_factor)))
                         else:
-                            print('G0 ' + str(variable) + str(sign * (current_distance)))
+                            print('G0 ' + str(variable) + str(sign * (current_distance*scale_factor)))
 
-                        print('---here')
+                        #if valve_ON_flag == True:
                         print(valve_OFF)
                         prev_pixel = ''
                         current_distance = 0
 
                 if pixel == white or visualize_ON == False:
-                    print('G1 ' + str(variable) + str(sign * (current_distance)))
+                    print('G1 ' + str(variable) + str(sign * (current_distance*scale_factor)))
                 else:
-                    print('G0 ' + str(variable) + str(sign * (current_distance)))
-
+                    print('G0 ' + str(variable) + str(sign * (current_distance*scale_factor)))
 
         print('G1 ' + str(z_var) + str(z))
 
@@ -401,12 +425,10 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    image1 = 'checkerboard_30x30pix.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
-    image2 = 'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
-    image3 = 'checkerboard_30x30pix.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
-    image4 = 'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
-
-    txt_export = '----testingOFFSET----.txt'
+    image1 = 'SerpentTail_28px_V2.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
+    image2 = 'SerpentBody_28px_V2.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
+    image3 = 'SerpentBody_28px_V2.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
+    image4 = 'SerpentHead_28px_V2.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
 
 
     ## To view in g-code simulator (https://nraynaud.github.io/webgcode/):
@@ -414,12 +436,13 @@ if __name__ == '__main__':
 
     ## Geometry
     wall_thickness = 2  # 'solid'  # OPTIONS: a number or 'solid'
-    fil_width = 1  # filament spacing
-    z_height = 1  # layer height
+    fil_width = 0.75 # filament spacing
+    z_height = 0.75  # layer height
     z_var = "A"  # for use in aerotech
 
     ## Offset compensation
-    offset = 2
+    offset = 1.5 # in mm - must be an integer multiple of the filament width
+
 
     ## Valve Toggle
     #### Toggle ON (grouped by face of cube)
@@ -460,3 +483,40 @@ if __name__ == '__main__':
 
     output = image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visualize_ON, fil_width, z_height,
                                      z_var, wall_thickness, offset)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
