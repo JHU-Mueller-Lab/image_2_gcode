@@ -489,7 +489,6 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 - creates a spiral print path with images that wrap around only the outside walls
 - all images must be the same size
 - visualize_ON = True shows the images in red by making black sections into G0 moves; to make a printable gcode, make sure to visualize_ON = False
-- wall thickness must be greater than 1
 - you can scale your image using the fil_width. if fil_width < 1, the images (and cube) will shrink. if fil_width > 1, the images will be enlarged. 
 - make sure the offsets are an even factor of the fil_width (e.g., offset/fil_width = integar)
 - you can define a larger offset length for when the layers have not been on for a long time.  
@@ -497,27 +496,27 @@ def image2gcode_spiral_cube(image_list, toggle_ON_list, toggle_OFF_list, visuali
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # image1 = 'SerpentTail_28px_V2.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
-    # image2 = 'SerpentBody_28px_V2.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
-    # image3 = 'SerpentBody_28px_V2.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
-    # image4 = 'SerpentHead_28px_V2.png'
-    image1 = 'checkerboard_30x30pix.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
-    image2 = 'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
-    image3 = 'checkerboard_30x30pix.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
-    image4 = 'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
+    image1 = 'SerpentTail_28px_V2.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
+    image2 = 'SerpentBody_28px_V2.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
+    image3 = 'SerpentBody_28px_V2.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
+    image4 = 'SerpentHead_28px_V2.png'
+    # image1 = 'checkerboard_30x30pix.png'  # 'Heart50x50.png'#flask_30pix.png'  # 'temp_aaron.png'#'temp_heart.png'
+    # image2 = 'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png'#happy_chemistry_spill_30pix.png'  # 'temp_smiley.png'
+    # image3 = 'checkerboard_30x30pix.png'  # 'Heart50x50.png'#'happy_chemistry_spill_30pix.png'  # 'temp_heart.png'
+    # image4 = 'checkerboard_invert_30x30pix.png'  # 'checkerboard_invert_30x30pix.png' #'Heart50x50.png' #'flask_30pix.png'  # 'temp_sarah_waz.png'
 
     ## To view in g-code simulator (https://nraynaud.github.io/webgcode/):
     visualize_ON = True
 
     ## Geometry
-    wall_thickness = 2  # 'solid'  # OPTIONS: a number or 'solid' # must be greater than 1
+    wall_thickness = 2 # 'solid'  # OPTIONS: a number or 'solid' # must be greater than 1
     fil_width = .75 #filament spacing
     z_height = fil_width # layer height
     z_var = "A"  # for use in aerotech
 
     ## Offset compensation
-    offset = 1.5 #.6
-    offset_large = 3 #5#1.2# this is the offset used when materials have been turned off too long
+    offset = 0 #1.5 #.6
+    offset_large = 0#3 #5#1.2# this is the offset used when materials have been turned off too long
 
     ## Valve Toggle
     #### Toggle ON (grouped by face of cube)
